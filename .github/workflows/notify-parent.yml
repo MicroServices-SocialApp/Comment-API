@@ -1,0 +1,16 @@
+name: Notify Parent Repo
+on:
+  push:
+    branches: [main]
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Repository Dispatch
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.TOKEN_FOR_ALL_MICROSERVICES }}
+          repository: MicroServices-SocialApp/All_MicroServices
+          event-type: microservice_updated
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
