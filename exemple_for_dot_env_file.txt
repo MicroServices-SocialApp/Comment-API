@@ -1,0 +1,7 @@
+# .env
+
+# DATABASE_URL= postgresql+asyncpg://USERNAME:PASSWORD@HOST:PORT/DB_NAME #local/on your computer database
+
+# DATABASE_URL= postgresql+asyncpg://USERNAME OF THE OWNER OF THE DATABSE:PASSWORD OF DATABASE@NAME OF THE ENVIRONEMENT IN THE DOCKER COMPOSE FILE:PORT IS OFTEN 5432/DATABASE NAME #database on docker
+
+DATABASE_URL= sqlite+aiosqlite:///./test/test.db #for test

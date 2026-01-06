@@ -1,0 +1,15 @@
+# .dockerignore
+
+__pycache__/
+__pycache__
+*/__pycache__
+.pytest_cache
+*.pyc
+venv/
+.venv
+.env
+.git
+.gitignore
+.coverage
+revision.sh
+upgrade.sh
