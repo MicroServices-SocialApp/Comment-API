@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 async def check_db():
 
     load_dotenv()
-    uri: str | None = os.getenv("DATABASE_URL")
+    uri: str | None = os.getenv("COMMENT_DATABASE_URL")
     if uri and uri.startswith("postgresql+asyncpg://"):
         uri = uri.replace("postgresql+asyncpg://", "postgresql://")
 
