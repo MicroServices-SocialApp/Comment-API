@@ -5,26 +5,42 @@ from db.database import Base
 
 
 
-class DbAbc(Base):
-    __tablename__: str = "user"
+class DbComment(Base):
+    __tablename__: str = "comment"
     id: Mapped[int] = mapped_column(
         Integer,
         primary_key=True,
-        index=True,
-        comment="Unique identifier for the user (Auto-incrementing PK).",
-    )
-    abc: Mapped[str] = mapped_column(
-        String(40),
         unique=True,
         nullable=False,
-        comment="Unique display name. Used for public profile URLs and mentions.",
+        index=True,
+        comment="Unique identifier for the comment (Auto-incrementing PK).",
     )
-    hashed_password: Mapped[str] = mapped_column(
-        String,
-        comment="Werkzeug hash (scrypt:32768:8:1). Use check_password_hash to verify.",
+    user_id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=False,
+        unique=False,
+        nullable=False,
+        index=True,
+        comment="Unique identifier for the user of the comment",
+    )
+    post_id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=False,
+        unique=False,
+        nullable=False,
+        index=True,
+        comment="Unique identifier for the post where the comment is written",
+    )
+    text: Mapped[str] = mapped_column(
+        String(256),
+        primary_key=False,
+        unique=False,
+        nullable=True,
+        index=False,
+        comment="string of 256 lenght max.",
     )
     timestamp: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
-        comment="Timestamp of when the account was created.",
+        comment="Timestamp of when the comment was created.",
     )
