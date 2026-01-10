@@ -1,11 +1,11 @@
-import os
-import logging
-from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy.ext.asyncio.engine import AsyncEngine
 from sqlalchemy.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio.engine import AsyncEngine
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import MetaData
+from dotenv import load_dotenv
+import logging
+import os
 
 # ------------------------------------------------------------------------------------
 
@@ -28,14 +28,14 @@ logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
 # ------------------------------------------------------------------------------------
 
 load_dotenv()
-DATABASE_URL: str | None = os.getenv("DATABASE_URL")
+COMMENT_DATABASE_URL: str | None = os.getenv("COMMENT_DATABASE_URL")
 
-if not DATABASE_URL:
-    raise ValueError("CRITICAL: DATABASE_URL environment variable is required.")
+if not COMMENT_DATABASE_URL:
+    raise ValueError("CRITICAL: COMMENT_DATABASE_URL environment variable is required.")
 
 # ------------------------------------------------------------------------------------
 
-engine: AsyncEngine = create_async_engine(DATABASE_URL, echo=False)
+engine: AsyncEngine = create_async_engine(COMMENT_DATABASE_URL, echo=False)
 
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
