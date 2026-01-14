@@ -1,3 +1,4 @@
+# pyright: reportUnusedFunction=false
 from sqlalchemy.exc import (
     AwaitRequired,
     MissingGreenlet,
@@ -65,16 +66,17 @@ def add_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(DataError)
     @app.exception_handler(IdentifierError)
     async def data_value_handler(request: Request, exc: Exception) -> JSONResponse:
-        """
-        Handles errors where the data value is invalid for the column type
-        (e.g., numeric overflow or string too long).
-        """
-        logger.error(f"Database Data Error: {exc}")
+        statement = getattr(exc, "statement", "Unknown SQL")
+        params = getattr(exc, "params", "No params")
+        logger.error(
+            f"Database Data Error: {exc} | Statement: {statement} | Params: {params}",
+            exc_info=True,
+        )
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
                 "detail": "The data provided is incompatible with the database constraints.",
-                "hint": "Check for string length limits or numeric ranges.",
+                "hint": getattr(exc, "hint", "No hint found"),
             },
         )
 
@@ -84,11 +86,11 @@ def add_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(ResourceClosedError)
     @app.exception_handler(IllegalStateChangeError)
     async def execution_state_handler(request: Request, exc: Exception) -> JSONResponse:
-        """
-        Handles logic errors during query execution, like finding multiple
-        results when only one was expected.
-        """
-        logger.error(f"Execution State Error: {exc}")
+        statement = getattr(exc, "statement", "Unknown SQL")
+        params = getattr(exc, "params", "No params")
+        logger.error(
+            f"Execution State Error: {exc} | Statement: {statement} | Params: {params}"
+        )
 
         # Determine status code based on exception type
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -99,10 +101,9 @@ def add_exception_handlers(app: FastAPI) -> None:
             status_code=status_code,
             content={
                 "detail": "A database execution error occurred.",
-                "type": type(exc).__name__,
+                "hint": getattr(exc, "hint", "No hint found"),
             },
         )
-    
 
     # --- SPECIFIC DATABASE ERRORS ---
 
@@ -111,11 +112,16 @@ def add_exception_handlers(app: FastAPI) -> None:
         request: Request,
         exc: IntegrityError,
     ) -> JSONResponse:
-        logger.error(f"Database Integrity Error: {exc}")
+        statement = getattr(exc, "statement", "Unknown SQL")
+        params = getattr(exc, "params", "No params")
+        logger.error(
+            f"Database Integrity Error: {exc} | Statement: {statement} | Params: {params}"
+        )
         return JSONResponse(
             status_code=status.HTTP_409_CONFLICT,
             content={
-                "detail": "Data conflict: (likely email or username) already exists."
+                "detail": "Data conflict: (likely email or username) already exists.",
+                "hint": getattr(exc, "hint", "No hint found"),
             },
         )
 
@@ -125,13 +131,18 @@ def add_exception_handlers(app: FastAPI) -> None:
         exc: NoReferencedTableError,
     ) -> JSONResponse:
         # We log this as CRITICAL because it means the database schema is broken/missing
-        logger.critical(f"Schema Error: {exc}")
+        statement = getattr(exc, "statement", "Unknown SQL")
+        params = getattr(exc, "params", "No params")
+        logger.critical(
+            f"Schema Error: {exc} | Statement: {statement} | Params: {params}"
+        )
 
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "detail": "Database schema error: A required table does not exist.",
                 "technical_context": "Run migrations (Alembic) to ensure the schema is up to date.",
+                "hint": getattr(exc, "hint", "No hint found"),
             },
         )
 
@@ -145,29 +156,42 @@ def add_exception_handlers(app: FastAPI) -> None:
         raw_error = getattr(exc.orig, "sqlstate", None)
 
         if raw_error == "42P01":
-            logger.critical("CRITICAL: Database table missing (42P01).")
+            statement = getattr(exc, "statement", "Unknown SQL")
+            params = getattr(exc, "params", "No params")
+            logger.critical(
+                f"CRITICAL: Database table missing (42P01) | Statement: {statement} | Params: {params}"
+            )
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content={
                     "detail": "Database schema error: A required table does not exist.",
                     "solution": "Run 'alembic upgrade head' to create the missing tables.",
+                    "hint": getattr(exc, "hint", "No hint found"),
                 },
             )
-        
+
         if raw_error == "42703":
-            logger.critical("CRITICAL: Database column mismatch (42703).")
+            statement = getattr(exc, "statement", "Unknown SQL")
+            params = getattr(exc, "params", "No params")
+            logger.critical(
+                f"CRITICAL: Database column mismatch (42703) | Statement: {statement} | Params: {params}"
+            )
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content={
                     "detail": "Database schema error: A column referenced in the code does not exist in the database.",
                     "solution": "Generate and run a new migration: 'alembic revision --autogenerate' followed by 'alembic upgrade head'.",
+                    "hint": getattr(exc, "hint", "No hint found"),
                 },
             )
 
         return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"detail": f"Internal Database Command Failed: raw_error: {raw_error}"}
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "detail": f"Internal Database Command Failed: raw_error: {raw_error}",
+                "hint": getattr(exc, "hint", "No hint found"),
+            },
         )
-
 
     # --- CONNECTION & POOL ERRORS ---
     @app.exception_handler(DisconnectionError)
@@ -177,15 +201,16 @@ def add_exception_handlers(app: FastAPI) -> None:
     async def connection_management_handler(
         request: Request, exc: Exception
     ) -> JSONResponse:
-        """
-        Handles low-level driver and connection pooling issues.
-        """
-        logger.critical(f"Database Connection/Pool Error: {exc}")
+        statement = getattr(exc, "statement", "Unknown SQL")
+        params = getattr(exc, "params", "No params")
+        logger.critical(
+            f"\nDatabase Connection/Pool Error: {exc} | Statement: {statement} | Params: {params}\n"
+        )
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
                 "detail": "Database communication failure. The service is temporarily unavailable.",
-                "retry": True,
+                "hint": getattr(exc, "hint", "No hint found"),
             },
         )
 
@@ -195,16 +220,16 @@ def add_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(UnboundExecutionError)
     @app.exception_handler(NotSupportedError)
     async def statement_error_handler(request: Request, exc: Exception) -> JSONResponse:
-        """
-        Handles errors related to the SQL statement itself, such as passing
-        the wrong types to a query or attempting to execute a non-executable object.
-        """
-        logger.error(f"SQL Statement Error: {exc}")
+        statement = getattr(exc, "statement", "Unknown SQL")
+        params = getattr(exc, "params", "No params")
+        logger.error(
+            f"SQL Statement Error: {exc} | Statement: {statement} | Params: {params}"
+        )
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "detail": "The database received an invalid command.",
-                "type": type(exc).__name__,
+                "hint": getattr(exc, "hint", "No hint found"),
             },
         )
 
@@ -215,11 +240,11 @@ def add_exception_handlers(app: FastAPI) -> None:
     async def session_lifecycle_handler(
         request: Request, exc: Exception
     ) -> JSONResponse:
-        """
-        Handles session state errors. In async environments, MissingGreenlet
-        usually means you're trying to use a sync driver where an async one is required.
-        """
-        logger.critical(f"Database Session Error: {exc}")
+        statement = getattr(exc, "statement", "Unknown SQL")
+        params = getattr(exc, "params", "No params")
+        logger.critical(
+            f"Database Session Error: {exc} | Statement: {statement} | Params: {params}"
+        )
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
@@ -234,16 +259,16 @@ def add_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(NoInspectionAvailable)
     @app.exception_handler(UnreflectableTableError)
     async def engine_metadata_handler(request: Request, exc: Exception) -> JSONResponse:
-        """
-        Handles internal database engine failures or issues with
-        SQLAlchemy's inspection API.
-        """
-        logger.critical(f"Database Engine Internal Error: {exc}")
+        statement = getattr(exc, "statement", "Unknown SQL")
+        params = getattr(exc, "params", "No params")
+        logger.critical(
+            f"Database Engine Internal Error: {exc} | Statement: {statement} | Params: {params}"
+        )
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "detail": "The database engine encountered an internal failure.",
-                "type": type(exc).__name__,
+                "hint": getattr(exc, "hint", "No hint found"),
             },
         )
 
@@ -254,11 +279,11 @@ def add_exception_handlers(app: FastAPI) -> None:
     async def relationship_linkage_handler(
         request: Request, exc: Exception
     ) -> JSONResponse:
-        """
-        Handles errors where foreign key relationships or referenced
-        columns are missing or improperly defined.
-        """
-        logger.error(f"Database Relationship Linkage Error: {exc}")
+        statement = getattr(exc, "statement", "Unknown SQL")
+        params = getattr(exc, "params", "No params")
+        logger.error(
+            f"Database Relationship Linkage Error: {exc} | Statement: {statement} | Params: {params}"
+        )
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
@@ -273,16 +298,16 @@ def add_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(UnsupportedCompilationError)
     @app.exception_handler(CompileError)
     async def internal_logic_handler(request: Request, exc: Exception) -> JSONResponse:
-        """
-        Handles errors caused by incorrect SQLAlchemy usage (e.g. forgot 'await'
-        on an async call, or passed bad arguments to a query).
-        """
-        logger.error(f"SQLAlchemy Logic Error: {exc}")
+        statement = getattr(exc, "statement", "Unknown SQL")
+        params = getattr(exc, "params", "No params")
+        logger.error(
+            f"SQLAlchemy Logic Error: {exc} | Statement: {statement} | Params: {params}"
+        )
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "detail": "A database logic error occurred.",
-                "type": type(exc).__name__,
+                "hint": getattr(exc, "hint", "No hint found"),
             },
         )
 
@@ -292,11 +317,11 @@ def add_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(ConstraintColumnNotFoundError)
     @app.exception_handler(DuplicateColumnError)
     async def schema_logic_handler(request: Request, exc: Exception) -> JSONResponse:
-        """
-        Handles errors in model relationships, such as circular references
-        or multiple foreign keys without specific 'foreign_keys' definitions.
-        """
-        logger.critical(f"Database Relationship Error: {exc}")
+        statement = getattr(exc, "statement", "Unknown SQL")
+        params = getattr(exc, "params", "No params")
+        logger.critical(
+            f"Database Relationship Error: {exc} | Statement: {statement} | Params: {params}"
+        )
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
@@ -310,17 +335,17 @@ def add_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(NoSuchTableError)
     @app.exception_handler(NoSuchColumnError)
     async def schema_mismatch_handler(request: Request, exc: Exception) -> JSONResponse:
-        """
-        Handles errors where the code tries to access a table or column
-        that does not exist in the database (common in reflection).
-        """
-        logger.critical(f"Schema Mismatch: {exc}")
+        statement = getattr(exc, "statement", "Unknown SQL")
+        params = getattr(exc, "params", "No params")
+        logger.critical(
+            f"Schema Mismatch: {exc} | Statement: {statement} | Params: {params}"
+        )
 
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "detail": "Database structure mismatch.",
-                "technical_context": "The application is trying to access a table or column that does not exist.",
+                "hint": "The application is trying to access a table or column that does not exist.",
             },
         )
 
@@ -330,10 +355,11 @@ def add_exception_handlers(app: FastAPI) -> None:
     async def module_error_handler(
         request: Request, exc: NoSuchModuleError
     ) -> JSONResponse:
-        """
-        Handles missing database drivers (e.g., trying to use asyncpg without installing it).
-        """
-        logger.critical(f"Dependency Error: {exc}")
+        statement = getattr(exc, "statement", "Unknown SQL")
+        params = getattr(exc, "params", "No params")
+        logger.critical(
+            f"Dependency Error: {exc} | Statement: {statement} | Params: {params}"
+        )
 
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -342,37 +368,46 @@ def add_exception_handlers(app: FastAPI) -> None:
                 "hint": "Check if 'asyncpg' or 'psycopg2' is installed in the environment.",
             },
         )
-    
 
     # --- GENERAL DATABASE ERROR (Parent) ---
-
 
     @app.exception_handler(SQLAlchemyError)
     async def sqlalchemy_exception_handler(
         request: Request,
         exc: SQLAlchemyError,
     ) -> JSONResponse:
-        logger.error(f"General Database Error: {exc}")
+        statement = getattr(exc, "statement", "No statement found")
+        params = getattr(exc, "params", "No params found")
+        logger.error(
+            f"General Database Error: {type(exc).__name__} | Statement: {statement} | Params: {params}",
+            exc_info=True,
+        )
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": "A database error occurred. Please try again later."},
+            content={
+                "detail": "A database error occurred. Please try again later.",
+                "hint": getattr(exc, "hint", "No hint found"),
+            },
         )
-
-
 
     @app.exception_handler(OperationalError)
     async def operational_handler(
         request: Request,
         exc: OperationalError,
     ) -> JSONResponse:
-        logger.critical(f"DB Connection Error: {exc}")
+        statement = getattr(exc, "statement", "No statement found")
+        params = getattr(exc, "params", "No params found")
+        logger.critical(
+            f"DB Connection Error: {type(exc).__name__} | Statement: {statement} | Params: {params}",
+            exc_info=True,
+        )
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
-                "detail": "Database connection failed. Please check if the DB is running."
+                "detail": "Database connection failed. Please check if the DB is running.",
+                "hint": getattr(exc, "hint", "No hint found"),
             },
         )
-
 
     # --- VALIDATION & TIMEOUT ---
 
@@ -385,7 +420,10 @@ def add_exception_handlers(app: FastAPI) -> None:
         errors = {err["loc"][-1]: err["msg"] for err in exc.errors()}
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            content={"detail": "Validation Error", "errors": errors},
+            content={
+                "detail": "Validation Error",
+                "errors": errors,
+            },
         )
 
     @app.exception_handler(TimeoutError)
@@ -393,10 +431,15 @@ def add_exception_handlers(app: FastAPI) -> None:
         request: Request,
         exc: TimeoutError,
     ) -> JSONResponse:
-        logger.error(f"Error: {exc}")
+        statement = getattr(exc, "statement", "Unknown SQL")
+        params = getattr(exc, "params", "No params")
+        logger.error(f"Error: {exc} | Statement: {statement} | Params: {params}")
         return JSONResponse(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            content={"detail": "The database took too long to respond."},
+            content={
+                "detail": "The database took too long to respond.",
+                "hint": getattr(exc, "hint", "No hint found"),
+            },
         )
 
     # --- UNIVERSAL CATCH-ALL (The Ultimate Parent) ---
@@ -406,8 +449,16 @@ def add_exception_handlers(app: FastAPI) -> None:
         request: Request,
         exc: Exception,
     ) -> JSONResponse:
-        logger.error(f"Uncaught Exception: {exc}", exc_info=True)
+        statement = getattr(exc, "statement", "Unknown SQL")
+        params = getattr(exc, "params", "No params")
+        logger.error(
+            f"Uncaught Exception: {exc} | Statement: {statement} | Params: {params}",
+            exc_info=True,
+        )
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": "A critical server error occurred."},
+            content={
+                "detail": "A critical server error occurred.",
+                "hint": getattr(exc, "hint", "No hint found"),
+            },
         )

@@ -4,7 +4,6 @@ from sqlalchemy.ext.asyncio.engine import AsyncEngine
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import MetaData
 from dotenv import load_dotenv
-import logging
 import os
 
 # ------------------------------------------------------------------------------------
@@ -20,10 +19,6 @@ convention = {
 
 class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=convention)
-
-# ------------------------------------------------------------------------------------
-
-logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
 
 # ------------------------------------------------------------------------------------
 
