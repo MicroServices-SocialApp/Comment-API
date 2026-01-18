@@ -13,7 +13,7 @@ from typing import Annotated
 from pydantic import Field
 from db import db_comment
 
-router = APIRouter(prefix="/comment", tags=["comment"])
+router = APIRouter(tags=["comment"])
 
 CommentIdPath = Annotated[
     int,
