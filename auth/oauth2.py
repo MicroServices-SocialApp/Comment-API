@@ -11,7 +11,7 @@ ALGORITHM = os.getenv("ALGORITHM")
 
 # 2. Define the scheme
 # This tells Swagger UI where to find the token (the URL of your auth service)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="http://localhost:8004/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="http://localhost/auth/login")
 
 
 # 3. The Dependency
