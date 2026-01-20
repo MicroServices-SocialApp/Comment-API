@@ -6,10 +6,11 @@ from schemas.schemas_comment import (
 )
 from schemas.schemas_paginated_comment import PaginatedCommentDisplay
 from sqlalchemy.ext.asyncio.session import AsyncSession
-from fastapi import APIRouter, Depends, Path, status
+from fastapi import APIRouter, HTTPException, Depends, Path, status
 from auth.oauth2 import get_current_user_id
 from db.database import get_async_db
 from typing import Annotated
+from sqlalchemy import text
 from pydantic import Field
 from db import db_comment
 
@@ -32,6 +33,27 @@ CurrentUser = Annotated[
         json_schema_extra={"example": 1},
     ),
 ]
+
+
+# --------------------------------------------------------------------------
+
+
+@router.get("/health", tags=["system"])
+async def health_check(db: AsyncSession = Depends(get_async_db)):
+    try:
+        # Execute a trivial query to confirm DB connectivity
+        await db.execute(text("SELECT 1"))
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        print(f"HEALTH CHECK FAILURE: {e}")
+        # If the DB is down, return a 503 so K8s knows the pod is failing
+        raise HTTPException(
+            status_code=503, 
+            detail=f"Database connection failed: {str(e)}"
+        )
+
+
+# --------------------------------------------------------------------------
 
 
 @router.post(
