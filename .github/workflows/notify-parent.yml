@@ -13,4 +13,4 @@ jobs:
           token: ${{ secrets.TOKEN_FOR_ALL_MICROSERVICES }}
           repository: MicroServices-SocialApp/All_MicroServices
           event-type: microservice_updated
-          client-payload: '{"service_name": "comment-api", "sha": "${{ github.sha }}"}'
+          client-payload: '{"service_name": "Comment-API", "sha": "${{ github.sha }}"}'
