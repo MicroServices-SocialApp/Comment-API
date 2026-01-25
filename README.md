@@ -15,9 +15,7 @@
 
 Here's what you can do with this API:
 <ul>
-    <li>CRUD opration on a User.</li>
-    <li>Create a User.</li>
-    <li>Log in into that Account.</li>
+    <li>CRUD opration on a Comment.</li>
 </ul>
 
 # The Process
@@ -36,21 +34,21 @@ Here's what you can do with this API:
 
     Setup Alembic for the database upgrades and history.
 
-3. User Authentication and Authorization
+3. comment Authentication and Authorization
 
-    Implemented user creation and login endpoints.
+    Implemented comment creation and login endpoints.
 
-    Utilized werkzeug for securely hashing and verifying user passwords.
+    Utilized werkzeug for securely hashing and verifying comment passwords.
 
     Integrated OAuth2 (specifically the Password flow) for issuing access tokens upon successful login.
 
-    Implemented JWT (JSON Web Tokens) for stateless user authentication. The JWTs are signed and contain the user ID, allowing the API to identify the authenticated user on subsequent requests.
+    Implemented JWT (JSON Web Tokens) for stateless comment authentication. The JWTs are signed and contain the comment ID, allowing the API to identify the authenticated comment on subsequent requests.
 
-    Created a dependency function to extract and validate the JWT from the request header, ensuring that only authenticated and authorized users can access protected routes.
+    Created a dependency function to extract and validate the JWT from the request header, ensuring that only authenticated and authorized comments can access protected routes.
 
 4. CRUD Operations Implementation
 
-    User: Developed endpoints for creating a user and fetching user details.
+    comment: Developed endpoints for creating a comment and fetching comment details.
 
 5. Data Validation
 
@@ -71,7 +69,7 @@ Here's what you can do with this API:
 
     Solidified my knowledge of implementing a robust authentication flow using the OAuth2 standard.
 
-    Understood the critical role of JWTs for securely transmitting information between parties and for managing user sessions in a stateless environment.
+    Understood the critical role of JWTs for securely transmitting information between parties and for managing comment sessions in a stateless environment.
 
     Learned the best practice of using libraries like werkzeug for password hashing to prevent storing plain-text passwords.
 
@@ -93,7 +91,7 @@ It was about solving problems, learning new things, and improving my skills for 
     <li>Plan out in advence the structure of the project. (Learned it the hard way.)</li>
     <li>Add video uploads.</li>
     <li>Add likes, re-tweet and views under posts and comments.</li>
-    <li>Add Following users and follow count.</li>
+    <li>Add Following comments and follow count.</li>
 </ul>
 
 # Running The Project Locally
