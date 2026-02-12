@@ -102,7 +102,7 @@ To run the project in your local environment, follow these steps:
 2.Create a Python virtual environnent using Python3.13
 3.Make sure the requirements have been installed.
 4.Check the "launch.sh" file to potentially change the host or/and port.
-5.Run the lauch.sh file.
+5.Run the lauch.sh file. by writiing in your terminal "./lauch.sh"
 6.Open http://127.0.0.1:8000/docs (or the address shown in your console) in your web browser to view the Swagger documentation.
 
 # Running The Project On Docker
