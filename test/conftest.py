@@ -19,12 +19,13 @@ def event_loop():
 async def setup_database():
     """Create and drop tables once per session."""
     engine = create_async_engine(TEST_DB_URL)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
     yield
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
 
 @pytest.fixture
 async def db_session():
@@ -39,6 +40,7 @@ async def db_session():
         await session.rollback() # Keeps tests isolated
     await engine.dispose()
 
+from auth.oauth2 import get_current_user_id
 @pytest.fixture
 async def client(db_session: AsyncSession):
     """Override the get_async_db dependency and return an AsyncClient."""
@@ -46,6 +48,10 @@ async def client(db_session: AsyncSession):
         yield db_session
 
     app.dependency_overrides[get_async_db] = override_get_async_db
+
+    async def override_get_current_user_id():
+        return 1
+    app.dependency_overrides[get_current_user_id] = override_get_current_user_id
     
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
