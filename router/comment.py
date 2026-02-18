@@ -48,7 +48,7 @@ async def health_check(db: AsyncSession = Depends(get_async_db)):
         print(f"HEALTH CHECK FAILURE: {e}")
         # If the DB is down, return a 503 so K8s knows the pod is failing
         raise HTTPException(
-            status_code=503, 
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, 
             detail=f"Database connection failed: {str(e)}"
         )
 
@@ -58,8 +58,12 @@ async def health_check(db: AsyncSession = Depends(get_async_db)):
 
 @router.post(
     "/create",
-    summary="une phrase qui resume la fonction.",
-    description="une decription longue et precise",
+    summary="Create a comment under a specified post.",
+    description=(
+        "Detailed endpoint to create a new comment. "
+        "It requires a valid post ID and the comment text. "
+        "The user ID is automatically extracted from the authentication token."
+    ),
     status_code=status.HTTP_201_CREATED,
 )
 async def create(
