@@ -13,7 +13,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.14' # Adjust to your version
+          python-version: '3.14'
 
       - name: Install dependencies
         run: |
@@ -21,6 +21,8 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Pytest
+        env:
+          COMMENT_DATABASE_URL: sqlite+aiosqlite:///./test/test.db
         run: python -m pytest
 
       - name: Send Repository Dispatch
