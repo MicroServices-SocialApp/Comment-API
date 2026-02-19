@@ -1,6 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from httpx import AsyncClient, ASGITransport
-# from ..db.database import Base, get_async_db
 from db.database import Base, get_async_db
 from main import app
 import asyncio
