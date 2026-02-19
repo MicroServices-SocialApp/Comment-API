@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from httpx import AsyncClient, ASGITransport
+# from ..db.database import Base, get_async_db
 from db.database import Base, get_async_db
 from main import app
 import asyncio
@@ -16,15 +17,23 @@ def event_loop():
     loop.close()
 
 @pytest.fixture(scope="session", autouse=True)
-async def setup_database():
-    """Create and drop tables once per session."""
+async def setup_database(request: pytest.FixtureRequest):
+    """Create and drop tables once per session, unless a test fails."""
     engine = create_async_engine(TEST_DB_URL)
-    yield
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-    await engine.dispose()
+    
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    yield
+
+    # Check if any tests failed in the session
+    if request.session.testsfailed == 0:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+    else:
+        print(f"\nTests failed! Database kept at: {TEST_DB_URL}")
+    
+    await engine.dispose()
     
 
 @pytest.fixture
