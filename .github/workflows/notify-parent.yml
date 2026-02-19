@@ -21,7 +21,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Pytest
-        run: pytest
+        run: python -m pytest
 
       - name: Send Repository Dispatch
         uses: peter-evans/repository-dispatch@v3
