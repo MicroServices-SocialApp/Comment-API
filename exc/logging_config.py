@@ -21,15 +21,18 @@ LOGGING_CONFIG: dict[str, Any] = {
         "standard": {
             "format": "%(asctime)s [%(levelname)s] [%(request_id)s] %(name)s: %(message)s"
         },
-        "detailed": {
-            "format": "%(asctime)s [%(levelname)s] [%(request_id)s] %(name)s %(filename)s:%(lineno)d: %(message)s"
+        "json": {
+            "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+            # Add otelTraceID and otelSpanID - these are injected by OTel
+            "format": "%(asctime)s %(levelname)s %(name)s %(message)s %(request_id)s %(otelTraceID)s %(otelSpanID)s",
+            "rename_fields": {"otelTraceID": "trace_id", "otelSpanID": "span_id"}
         },
     },
     "handlers": {
         "console": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "standard",
+            "formatter": "json",
             "filters": ["request_id_filter"],
         },
         "file_handler": {
