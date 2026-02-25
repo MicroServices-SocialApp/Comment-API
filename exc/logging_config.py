@@ -1,11 +1,11 @@
 from logging import LogRecord
+from typing import Any
 from core.context import request_id_ctx
-from typing import Any, Literal
 import logging.config
 import os
 
 class ContextFilter(logging.Filter):
-    def filter(self, record: LogRecord) -> Literal[True]:
+    def filter(self, record: LogRecord):
         record.request_id = request_id_ctx.get()
         return True
 
@@ -13,7 +13,7 @@ class ContextFilter(logging.Filter):
 if not os.path.exists("exc/logs"):
     os.makedirs("exc/logs")
 
-LOGGING_CONFIG: dict[str, Any] = {
+LOGGING_CONFIG: dict[str, Any]= {
     "version": 1,
     "disable_existing_loggers": False,
     "filters": {"request_id_filter": {"()": ContextFilter}},
@@ -41,7 +41,7 @@ LOGGING_CONFIG: dict[str, Any] = {
             "filename": "exc/logs/app_errors.log",
             "maxBytes": 5242880,  # 5MB per file
             "backupCount": 5,     # Keep the last 5 old log files
-            "formatter": "detailed",
+            "formatter": "standard",
             "filters": ["request_id_filter"],
             "encoding": "utf8",
         },
@@ -55,5 +55,5 @@ LOGGING_CONFIG: dict[str, Any] = {
     },
 }
 
-def setup_logging() -> None:
+def setup_logging():
     logging.config.dictConfig(LOGGING_CONFIG)
