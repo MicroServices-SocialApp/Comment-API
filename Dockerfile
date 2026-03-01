@@ -29,8 +29,8 @@ COPY . .
 
 # This command installs the actual instrumentation for fastapi, jinja2, etc. 
 # based on what it finds in your environment
-RUN opentelemetry-bootstrap -a install
+# RUN opentelemetry-bootstrap -a install
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "python db/wait_for_db.py && opentelemetry-instrument && uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1"]
+CMD ["sh", "-c", "python db/wait_for_db.py && uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1"]
