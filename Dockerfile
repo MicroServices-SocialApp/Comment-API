@@ -1,5 +1,5 @@
 # --- Stage 1: Builder ---
-FROM python:3.14-slim AS builder
+FROM python:3.13-slim AS builder
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # --- Stage 2: Final ---
-FROM python:3.14-slim
+FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -29,8 +29,8 @@ COPY . .
 
 # This command installs the actual instrumentation for fastapi, jinja2, etc. 
 # based on what it finds in your environment
-# RUN opentelemetry-bootstrap -a install
+RUN opentelemetry-bootstrap -a install
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "python db/wait_for_db.py && uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1"]
+CMD ["sh", "-c", "python db/wait_for_db.py && opentelemetry-instrument uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1"]
